@@ -13,8 +13,8 @@ MAINTAINER Pranav Swaroop Gundla <pranav@plantik.bio>
 RUN apt-get update && apt-get install --yes \
     openjdk-8-jre \
     perl \
-    unzip
-
+    unzip 
+    
 # Download FastQC
 ADD http://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.5.zip /tmp/
 
@@ -31,19 +31,18 @@ ENTRYPOINT ["fastqc"]
 ARG PACKAGE_VERSION=0.5.3
 ARG DEBIAN_FRONTEND=noninteractive
 
+# Update the repository sources list and install the essential packages
 RUN apt-get update && \
     apt-get install --yes python-pip && \
     pip install --upgrade pip && \
     pip install umi_tools==$PACKAGE_VERSION && \
-    apt clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* 
     
-ARG DEBIAN_FRONTEND=noninteractive
+# Trim Galore!
 WORKDIR /usr/local
-
 # Update the repository sources list
 RUN apt-get update && \
-    apt-get -y install wget python gzip unzip && \
+    apt-get install -y wget && \
     wget https://github.com/ComputationalSystemsBiology/EoulsanDockerFiles/raw/master/TrimAdapt/cutadapt-1.8.1.tar.gz && \
     tar -xzf cutadapt-1.8.1.tar.gz && \
     ln -s /usr/local/cutadapt-1.8.1 /tmp/ && \
@@ -57,22 +56,18 @@ RUN apt-get update && \
     chmod +x /usr/local/bin/rename_trim_galore_output.sh && \
     printf '#/bin/bash\nb=$(basename "$2")\ne=${b#*.}\nd=$(dirname "$2")\nmv "$d/$(basename "$b" .$e)_$1.fq" "$3"\n' >> /usr/local/bin/rename_trim_galore_output.sh
 
-WORKDIR /
-
 # Cutadapt
 ARG PACKAGE_VERSION=2.10
 ARG BUILD_PACKAGES="build-essential"
 ARG DEBIAN_FRONTEND=noninteractive
-
+# Update the repository sources list
 RUN apt update && \
     apt install --yes $BUILD_PACKAGES && \
     apt install --yes python3-pip \
                       libpython3-dev && \
     pip3 install "cutadapt==$PACKAGE_VERSION" && \
-    apt autoremove --purge --yes && \
-    apt clean && \
     rm -rf /var/lib/apt/lists/*  
-    
+
 # Bowtie 2
 # Update the repository sources list
 RUN apt-get update
@@ -91,17 +86,8 @@ RUN make
 RUN cp -p bowtie2 bowtie2-* /usr/local/bin
 # Cleanup
 RUN rm -rf /tmp/bowtie2
-RUN apt-get clean
-RUN apt-get remove --yes --purge build-essential gcc-multilib apt-utils zlib1g-dev vim git
-WORKDIR /root
 
 # bwa
-# Update the repository sources list
-RUN apt-get update
-
-# Install compiler and perl stuff
-RUN apt-get install --yes build-essential gcc-multilib apt-utils zlib1g-dev wget
-
 # Get source code from git
 RUN apt-get install --yes git
 WORKDIR /tmp
@@ -115,37 +101,22 @@ RUN cp -p bwa /usr/local/bin
 
 # Cleanup
 RUN rm -rf /tmp/bwa
-RUN apt-get clean
-RUN apt-get remove --yes --purge build-essential gcc-multilib apt-utils zlib1g-dev wget
-
 
 # htseq
 ARG PACKAGE_VERSION=0.11.0
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_PACKAGES=""
-
-
+# Update the repository sources list
 RUN apt-get update && \
     apt-get install --yes \
               $BUILD_PACKAGES \
               python-pip && \
     pip install htseq==$PACKAGE_VERSION && \
-    apt clean && \
     rm -rf /var/lib/apt/lists/*
 
 #    pip install --upgrade pip && \
 
 # STAR
-# Install compiler and perl stuff
-RUN apt-get install --yes \
- build-essential \
- gcc-multilib \
- apt-utils \
- zlib1g-dev
-
-# Install git
-RUN apt-get install --yes git
-
 # Install STAR
 WORKDIR /usr/local/
 RUN pwd
@@ -182,17 +153,8 @@ RUN ln -s bowtie2 bowtie
 # Change in PATH
 ENV PATH $PATH:/bin/tophat-2.0.14.Linux_x86_64
 ENV PATH $PATH:/bin/bowtie2-2.2.3
-# Remove wget and unzip
-RUN apt-get purge --yes wget unzip
-# Working directory 
-WORKDIR /
+
 # HISAT
-# Update the repository sources list
-RUN apt-get update
-
-# Install compiler and perl stuff
-RUN apt-get install --yes build-essential git
-
 # Install HISAT
 WORKDIR /tmp
 RUN git clone https://github.com/infphilo/hisat.git
@@ -202,17 +164,9 @@ RUN git checkout master
 # Compile
 RUN make
 RUN cp -p hisat hisat-* /usr/local/bin
-
 # Cleanup
 RUN rm -rf /tmp/hisat
-RUN apt-get clean
-RUN apt-get remove --yes --purge build-essential gcc-multilib apt-utils zlib1g-dev vim git
 
-# Set default working path
-WORKDIR /root
-
-# Default command to execute at startup of the container
-CMD hisat
 
 # Cufflinks
 FROM biocontainers/biocontainers:latest
@@ -250,74 +204,49 @@ RUN apt-get update && \
     rm -rf /tmp/* && \
     apt remove --purge --yes \
               $BUILD_PACKAGES && \
-    apt autoremove --purge --yes && \
-    apt clean && \
     rm -rf /var/lib/apt/lists/*
-   
-# samtools    
-# Update the repository sources list and install samtools package
-RUN apt update && \
-    apt install --yes wget libcurl3-gnutls && \
-    wget http://mirrors.kernel.org/ubuntu/pool/universe/s/samtools/samtools_1.4.1-1build1_amd64.deb && \
-    wget http://mirrors.kernel.org/ubuntu/pool/universe/h/htslib/libhts2_1.5-1_amd64.deb && \
-    dpkg -i samtools_*.deb libhts2_*.deb && \
-    rm *.deb && \
-    apt clean
-   
-# install CRAN dependancies
-
-RUN apt-get install -y \
- r-cran-bitops \
- r-cran-xml \
- r-cran-dbi \
- r-cran-rcurl \
- r-cran-rsqlite
     
-# DESeq
-# Set the base image to Ubuntu
-FROM r-base:3.2.3
+# SAM Tools   
+# set the environment variables
+ENV samtools_version 1.10
+ENV bcftools_version 1.10
+ENV htslib_version 1.10
 
+# run update and install necessary packages
+RUN apt-get update -y && apt-get install -y \
+    bzip2 \
+    build-essential \
+    zlib1g-dev \
+    libncurses5-dev \
+    libncursesw5-dev \
+    libnss-sss \
+    libbz2-dev \
+    liblzma-dev \
+    vim \
+    less \
+    libcurl4-openssl-dev \
+    wget
 
-# Default command to execute at startup of the container
-CMD R --no-save
+# download the suite of tools
+WORKDIR /usr/local/bin/
+RUN wget https://github.com/samtools/samtools/releases/download/${samtools_version}/samtools-${samtools_version}.tar.bz2
+RUN wget https://github.com/samtools/bcftools/releases/download/${bcftools_version}/bcftools-${bcftools_version}.tar.bz2
+RUN wget https://github.com/samtools/htslib/releases/download/${htslib_version}/htslib-${htslib_version}.tar.bz2
 
-# Update the repository sources list
-RUN apt-get update
-RUN apt-get install -y \
- apt-utils
+# extract files for the suite of tools
+RUN tar -xjf /usr/local/bin/samtools-${samtools_version}.tar.bz2 -C /usr/local/bin/
+RUN tar -xjf /usr/local/bin/bcftools-${bcftools_version}.tar.bz2 -C /usr/local/bin/
+RUN tar -xjf /usr/local/bin/htslib-${htslib_version}.tar.bz2 -C /usr/local/bin/
 
-# Add CRAN source to apt
-RUN echo "deb http://cran.r-project.org/bin/linux/ubuntu trusty/" > /etc/apt/sources.list.d/cran.list
+# run make on the source
+RUN cd /usr/local/bin/htslib-${htslib_version}/ && ./configure
+RUN cd /usr/local/bin/htslib-${htslib_version}/ && make
+RUN cd /usr/local/bin/htslib-${htslib_version}/ && make install
 
-# install CRAN dependancies
+RUN cd /usr/local/bin/samtools-${samtools_version}/ && ./configure
+RUN cd /usr/local/bin/samtools-${samtools_version}/ && make
+RUN cd /usr/local/bin/samtools-${samtools_version}/ && make install
 
-RUN apt-get install -y \
- r-cran-bitops \
- r-cran-xml \
- r-cran-dbi \
- r-cran-rcurl \
- r-cran-rsqlite
-    
-
-
-# Install DESeq2 and FactoMineR package  
-RUN R -e 'BiocManager::install("DESeq2")' && R -e 'BiocManager::install("FactoMineR")' && R -e 'devtools::install_github("kassambara/factoextra")'
-
-# Cleanup
-RUN apt-get clean
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+RUN cd /usr/local/bin/bcftools-${bcftools_version}/ && make
+RUN cd /usr/local/bin/bcftools-${bcftools_version}/ && make install
 
