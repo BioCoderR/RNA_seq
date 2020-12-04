@@ -9,9 +9,9 @@ FROM ubuntu:16.04
 # File Author / Maintainer
 MAINTAINER Pranav Swaroop Gundla <pranav@plantik.bio>
 
-# Install OpenJDK 7 JRE
+# Install OpenJDK 8 JRE
 RUN apt-get update && apt-get install --yes \
-    openjdk-7-jre \
+    openjdk-8-jre \
     perl \
     unzip
 
@@ -144,7 +144,7 @@ RUN apt-get install --yes \
  zlib1g-dev
 
 # Install git
-RUN apt-get install -y git
+RUN apt-get install --yes git
 
 # Install STAR
 WORKDIR /usr/local/
