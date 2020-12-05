@@ -249,4 +249,5 @@ RUN cd /usr/local/bin/samtools-${samtools_version}/ && make install
 
 RUN cd /usr/local/bin/bcftools-${bcftools_version}/ && make
 RUN cd /usr/local/bin/bcftools-${bcftools_version}/ && make install
-
+# Working directory default
+WORKDIR /
